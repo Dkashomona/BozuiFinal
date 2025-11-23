@@ -11,59 +11,56 @@ export default function HomeScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <View style={styles.center}>
         <Text>Loading...</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.page} contentContainerStyle={styles.content}>
-      {/* ADMIN BADGE */}
+    <ScrollView style={styles.page} contentContainerStyle={{ padding: 16 }}>
+      
       {role === "admin" && (
-        <View style={styles.adminBadge}>
-          <Text style={styles.adminText}>ADMIN</Text>
-        </View>
+        <>
+          <View style={styles.adminBadge}>
+            <Text style={styles.adminText}>ADMIN MODE</Text>
+          </View>
+
+          <View style={{ marginBottom: 16 }}>
+            <Button
+              title="🛠 Go to Admin Dashboard"
+              onPress={() => router.push("/admin")}
+            />
+          </View>
+        </>
       )}
 
-      {/* ADMIN DASHBOARD BUTTON */}
-      {role === "admin" && (
-        <View style={{ marginBottom: 16 }}>
-          <Button
-            title="🛠 Go to Admin Dashboard"
-            onPress={() => router.push("/admin")}
-          />
-        </View>
-      )}
-
-      {/* SEARCH + CAMPAIGNS + PRODUCTS */}
       <SearchBar />
+
       <CampaignSlider />
+
+      <Text style={styles.sectionTitle}>🧺 All Products</Text>
       <ProductFeed />
 
-      {/* LOGOUT BUTTON */}
-      <View style={{ marginTop: 20 }}>
+      <View style={{ marginTop: 30 }}>
         <LogoutButton />
       </View>
+
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: "#f5f5f5" },
-  content: { padding: 16 },
-
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  sectionTitle: { fontSize: 20, fontWeight: "700", marginVertical: 20 },
   adminBadge: {
     backgroundColor: "#4A90E2",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
     alignSelf: "flex-start",
-    marginBottom: 15,
+    marginBottom: 10,
   },
-  adminText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 14,
-  },
+  adminText: { color: "white", fontWeight: "bold", fontSize: 12 }
 });

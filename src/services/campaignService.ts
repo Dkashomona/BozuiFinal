@@ -1,21 +1,21 @@
-import { collection, doc, getDocs, query, setDoc, where } from "firebase/firestore";
+import { collection, doc, getDocs, setDoc } from "firebase/firestore";
 import { Campaign } from "../models/Campaign";
 import { db } from "./firebase";
 
-
 export async function getCampaigns(): Promise<Campaign[]> {
-  const q = query(collection(db, "campaigns"), where("isActive", "==", true));
-  const snap = await getDocs(q);
+  const snap = await getDocs(collection(db, "campaigns"));
 
-  return snap.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
+  return snap.docs.map((d) => ({
+    id: d.id,
+    ...d.data(),
   })) as Campaign[];
 }
+
 export async function createCampaign(id: string, data: any, bannerUrl: string) {
   await setDoc(doc(db, "campaigns", id), {
     ...data,
     bannerImage: bannerUrl,
+    isActive: true,   // OPTIONAL if you want filtering
     createdAt: new Date(),
   });
 }
