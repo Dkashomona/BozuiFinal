@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { Button, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Button, StyleSheet, Text, View } from "react-native";
 import CampaignSlider from "../../src/components/home/CampaignSlider";
 import ProductFeed from "../../src/components/home/ProductFeed";
 import SearchBar from "../../src/components/home/SearchBar";
@@ -18,42 +18,67 @@ export default function HomeScreen() {
   }
 
   return (
-    <ScrollView style={styles.page} contentContainerStyle={{ padding: 16 }}>
-      
-      {role === "admin" && (
-        <>
-          <View style={styles.adminBadge}>
-            <Text style={styles.adminText}>ADMIN MODE</Text>
-          </View>
+    <View style={styles.page}>
 
-          <View style={{ marginBottom: 16 }}>
-            <Button
-              title="🛠 Go to Admin Dashboard"
-              onPress={() => router.push("/admin")}
-            />
-          </View>
-        </>
-      )}
+      {/* -------- TOP STATIC CONTENT -------- */}
+      <View style={styles.topStatic}>
+        {role === "admin" && (
+          <>
+            <View style={styles.adminBadge}>
+              <Text style={styles.adminText}>ADMIN MODE</Text>
+            </View>
+            <View style={{ marginBottom: 16 }}>
+              <Button
+                title="🛠 Go to Admin Dashboard"
+                onPress={() => router.push("/admin")}
+              />
+            </View>
+          </>
+        )}
 
-      <SearchBar />
+        <SearchBar />
+        <CampaignSlider />
 
-      <CampaignSlider />
+        <Text style={styles.sectionTitle}>🧺 All Products</Text>
+      </View>
 
-      <Text style={styles.sectionTitle}>🧺 All Products</Text>
-      <ProductFeed />
+      {/* -------- PRODUCT LIST (VERTICAL SCROLL) -------- */}
+      <View style={styles.productArea}>
+        <ProductFeed />
+      </View>
 
-      <View style={{ marginTop: 30 }}>
+      <View style={{ padding: 16 }}>
         <LogoutButton />
       </View>
 
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: "#f5f5f5" },
+  page: {
+    flex: 1,
+    backgroundColor: "#f5f5f5",
+  },
+
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  sectionTitle: { fontSize: 20, fontWeight: "700", marginVertical: 20 },
+
+  topStatic: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+
+  productArea: {
+    flex: 1,             // <-- ProductFeed fills the screen
+    paddingHorizontal: 16,
+  },
+
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    marginVertical: 16,
+  },
+
   adminBadge: {
     backgroundColor: "#4A90E2",
     paddingHorizontal: 12,
@@ -62,5 +87,10 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     marginBottom: 10,
   },
-  adminText: { color: "white", fontWeight: "bold", fontSize: 12 }
+
+  adminText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 12,
+  },
 });

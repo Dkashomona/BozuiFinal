@@ -18,17 +18,20 @@ import {
 import { Campaign } from "../../models/Campaign";
 import { getCampaigns } from "../../services/campaignService";
 import { db } from "../../services/firebase";
+import CampaignModal from "./CampaignModal";
 
 const { width } = Dimensions.get("window");
 
+// 🔥 Responsive banner height: larger on web/desktop, smaller on mobile
+const bannerHeight = Platform.OS === "web" || width > 900 ? 200 : 60;
+
 export default function CampaignSlider() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [campaignProducts, setCampaignProducts] = useState<
-    Record<string, any[]>
-  >({});
+  const [campaignProducts, setCampaignProducts] = useState<Record<string, any[]>>({});
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
 
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const scrollRef = useRef<ScrollView>(null);
 
   /** LOAD CAMPAIGNS + PRODUCTS */
@@ -43,7 +46,6 @@ export default function CampaignSlider() {
       const ids = Array.isArray(c.productIds) ? c.productIds : [];
 
       for (const pid of ids) {
-        // pid must be just "1763…" (NOT "products/1763…")
         const ref = doc(db, "products", pid);
         const snap = await getDoc(ref);
         if (snap.exists()) {
@@ -61,7 +63,6 @@ export default function CampaignSlider() {
     load();
   }, [load]);
 
-  /** Ensure we start at first slide when campaigns load */
   useEffect(() => {
     if (campaigns.length > 0) {
       setActiveIndex(0);
@@ -69,7 +70,7 @@ export default function CampaignSlider() {
     }
   }, [campaigns.length]);
 
-  /** AUTO-SLIDER: one timeout per step, pause-aware */
+  /** AUTO-SLIDER */
   useEffect(() => {
     if (campaigns.length <= 1 || paused) return;
 
@@ -82,7 +83,6 @@ export default function CampaignSlider() {
     return () => clearTimeout(timeout);
   }, [activeIndex, campaigns.length, paused]);
 
-  /** Hover pause for web */
   const hoverProps =
     Platform.OS === "web"
       ? {
@@ -91,13 +91,10 @@ export default function CampaignSlider() {
         }
       : {};
 
-  if (campaigns.length === 0) {
-    return null; // nothing to show yet
-  }
+  if (campaigns.length === 0) return null;
 
   return (
     <View style={{ marginTop: 16 }}>
-      {/* Section header (only once – remove any other “Featured Deals” on Home) */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>🔥 Featured Deals</Text>
       </View>
@@ -109,9 +106,7 @@ export default function CampaignSlider() {
           pagingEnabled
           showsHorizontalScrollIndicator={false}
           onScroll={(e) => {
-            const index = Math.round(
-              e.nativeEvent.contentOffset.x / width
-            );
+            const index = Math.round(e.nativeEvent.contentOffset.x / width);
             setActiveIndex(index);
           }}
           scrollEventThrottle={16}
@@ -120,65 +115,42 @@ export default function CampaignSlider() {
             <Pressable
               key={c.id}
               style={{ width }}
-              onPress={() => setPaused((p) => !p)} // tap to pause/resume
+              onPress={() => setSelectedCampaign(c)} // <<< OPEN MODAL
             >
-              {/* Banner */}
               <View style={styles.bannerWrapper}>
                 {c.bannerImage ? (
-                  <Image
-                    source={{ uri: c.bannerImage }}
-                    style={styles.banner}
-                  />
+                  <Image source={{ uri: c.bannerImage }} style={styles.banner} />
                 ) : (
                   <View style={[styles.banner, styles.bannerPlaceholder]}>
-                    <Text style={{ color: "#666" }}>No banner</Text>
+                    <Text>No banner</Text>
                   </View>
                 )}
 
-                {/* Floating campaign label */}
+                {/* Campaign label */}
                 <View style={styles.textWrap}>
                   <View style={styles.campaignLabel}>
-                    <Text style={styles.campaignLabelText}>
-                      {c.title}
-                    </Text>
+                    <Text style={styles.campaignLabelText}>{c.title}</Text>
                   </View>
-                  {c.subtitle ? (
-                    <Text style={styles.subtitle}>{c.subtitle}</Text>
-                  ) : null}
                 </View>
               </View>
 
-              {/* Horizontal small product cards */}
+              {/* Products under banner */}
               <ScrollView
                 horizontal
-                style={{ marginTop: 10, paddingLeft: 10 }}
+                style={{ marginTop: 8, paddingLeft: 8 }}
                 showsHorizontalScrollIndicator={false}
               >
                 {(campaignProducts[c.id] ?? []).map((p) => (
                   <View key={p.id} style={styles.productCard}>
-                    {p.images?.[0] ? (
-                      <Image
-                        source={{ uri: p.images[0] }}
-                        style={styles.productImage}
-                      />
-                    ) : (
-                      <View style={styles.productImagePlaceholder}>
-                        <Text style={{ fontSize: 10, color: "#777" }}>
-                          No image
-                        </Text>
-                      </View>
-                    )}
-
-                    <Text
-                      numberOfLines={1}
-                      style={styles.productName}
-                    >
+                    <Image
+                      source={{ uri: p.images?.[0] ?? "https://via.placeholder.com/80" }}
+                      style={styles.productImage}
+                    />
+                    <Text numberOfLines={1} style={styles.productName}>
                       {p.name}
                     </Text>
                     {"price" in p && (
-                      <Text style={styles.productPrice}>
-                        ${Number(p.price).toFixed(2)}
-                      </Text>
+                      <Text style={styles.productPrice}>${Number(p.price).toFixed(2)}</Text>
                     )}
                   </View>
                 ))}
@@ -188,30 +160,34 @@ export default function CampaignSlider() {
         </ScrollView>
       </View>
 
-      {/* Dots */}
       <View style={styles.dots}>
         {campaigns.map((_, i) => (
           <View
             key={i}
-            style={[
-              styles.dot,
-              { opacity: i === activeIndex ? 1 : 0.3 },
-            ]}
+            style={[styles.dot, { opacity: i === activeIndex ? 1 : 0.3 }]}
           />
         ))}
       </View>
+
+      {/* MODAL */}
+      <CampaignModal
+        visible={!!selectedCampaign}
+        campaign={selectedCampaign}
+        products={
+          selectedCampaign ? campaignProducts[selectedCampaign.id] ?? [] : []
+        }
+        onClose={() => setSelectedCampaign(null)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
     marginBottom: 6,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "bold",
   },
   bannerWrapper: {
@@ -219,73 +195,67 @@ const styles = StyleSheet.create({
   },
   banner: {
     width: "100%",
-    height: 180,
+    height: bannerHeight, // 🔥 responsive height
     resizeMode: "cover",
-    borderRadius: 12,
-    overflow: "hidden",
+    borderRadius: 8,
   },
   bannerPlaceholder: {
-    backgroundColor: "#e5e5e5",
+    backgroundColor: "#ddd",
     justifyContent: "center",
     alignItems: "center",
+    height: bannerHeight,
+    borderRadius: 8,
   },
   textWrap: {
     position: "absolute",
-    left: 16,
-    bottom: 16,
+    left: 12,
+    bottom: 12,
   },
   campaignLabel: {
-    backgroundColor: "rgba(0,0,0,0.7)",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginBottom: 4,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
   campaignLabelText: {
     color: "white",
-    fontWeight: "bold",
-    fontSize: 14,
-  },
-  subtitle: {
-    color: "white",
+    fontWeight: "600",
     fontSize: 12,
   },
   productCard: {
-    width: 110,
-    marginRight: 10,
-  },
-  productImage: {
-    width: "100%",
-    height: 120,
-    borderRadius: 10,
-  },
-  productImagePlaceholder: {
-    width: "100%",
-    height: 120,
-    borderRadius: 10,
-    backgroundColor: "#f0f0f0",
-    justifyContent: "center",
+    width: 100,
+    marginRight: 8,
     alignItems: "center",
   },
+  productImage: {
+    width: 80,
+    height: 70,
+    borderRadius: 6,
+    marginBottom: 4,
+    backgroundColor: "#eee",
+  },
   productName: {
-    marginTop: 4,
     fontSize: 12,
+    fontWeight: "600",
+    textAlign: "center",
   },
   productPrice: {
     fontSize: 12,
     fontWeight: "bold",
     color: "#e67e22",
+    textAlign: "center",
+    marginTop: 2,
   },
   dots: {
     flexDirection: "row",
     alignSelf: "center",
-    marginTop: 8,
+    marginTop: 4,
   },
   dot: {
-    width: 8,
-    height: 8,
+    width: 6,
+    height: 6,
     backgroundColor: "#333",
-    borderRadius: 4,
-    marginHorizontal: 4,
+    borderRadius: 3,
+    marginHorizontal: 3,
   },
 });
