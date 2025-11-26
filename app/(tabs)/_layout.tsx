@@ -23,14 +23,6 @@ export default function TabLayout() {
           title: "Profile",
         }}
       />
-
-      {/* Keep Explore if you want or remove it */}
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: "Explore",
-        }}
-      />
     </Tabs>
   );
 }
